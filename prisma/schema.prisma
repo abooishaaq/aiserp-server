@@ -1,0 +1,194 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+enum UserType {
+    SU
+    ADMIN
+    TEACHER
+    STUDENT
+}
+
+model User {
+    id        String           @id @default(cuid())
+    name      String
+    email     String?          @unique
+    phone     String?          @unique
+    createdAt DateTime         @default(now())
+    type      UserType
+    students  StudentProfile[]
+    teacher   Teacher[]
+    authSess  AuthSession[]
+}
+
+model Student {
+    id        String         @id @default(cuid())
+    classId   String
+    groupId   String
+    subjects  Group          @relation(fields: [groupId], references: [id])
+    class     Class          @relation(fields: [classId], references: [id])
+    rollNo    String
+    marks     Marks[]
+    profileId String
+    profile   StudentProfile @relation(fields: [profileId], references: [id])
+    createdAt DateTime       @default(now())
+}
+
+enum Gender {
+    MALE
+    FEMALE
+}
+
+model StudentProfile {
+    id         String    @id @default(cuid())
+    srNo       String    @unique
+    name       String
+    students   Student[]
+    motherName String
+    fatherName String
+    fatherOcc  String
+    motherOcc  String
+    dob        DateTime
+    address    String
+    phone1     String?
+    phone2     String?
+    users      User[]
+    Siblings   Siblings? @relation(fields: [siblingsId], references: [id])
+    siblingsId String?
+    gender     Gender
+}
+
+model Siblings {
+    id         String           @id @default(cuid())
+    profileIds String[]
+    profiles   StudentProfile[]
+}
+
+enum Grade {
+    NURSERY
+    SR_NURSERY
+    KINDERGARDEN
+    FIRST
+    SECOND
+    THIRD
+    FOURTH
+    FIFTH
+    SIXTH
+    SEVENTH
+    EIGHTH
+    NINTH
+    TENTH
+    ELEVENTH
+    TWELFTH
+}
+
+model Class {
+    id           String         @id @default(cuid())
+    grade        Grade
+    section      String
+    teacherId    String         @unique
+    sessionId    String
+    teacher      Teacher        @relation(fields: [teacherId], references: [id])
+    session      Session        @relation(fields: [sessionId], references: [id])
+    students     Student[]
+    notices      Notice[]
+    ClassSubject ClassSubject[]
+}
+
+model Teacher {
+    id            String         @id @default(cuid())
+    userId        String         @unique
+    user          User           @relation(fields: [userId], references: [id])
+    class         Class?
+    classSubjects ClassSubject[]
+    session       Session        @relation(fields: [sessionId], references: [id])
+    sessionId     String
+}
+
+model ClassSubject {
+    id          String  @id @default(cuid())
+    classId     String
+    subjectName String
+    teacherId   String
+    class       Class   @relation(fields: [classId], references: [id])
+    subject     Subject @relation(fields: [subjectName], references: [name])
+    teacher     Teacher @relation(fields: [teacherId], references: [id])
+}
+
+model Attendance {
+    id        String   @id @default(cuid())
+    date      DateTime @default(now())
+    studentId String
+    present   Boolean
+}
+
+enum TestType {
+    MIDTERM
+    FINAL
+    ASSESSMENT
+}
+
+model Test {
+    id          String   @id @default(cuid())
+    date        DateTime @default(now())
+    total       Int
+    marks       Marks[]
+    type        TestType
+    grade       String
+    subjectName String
+    subject     Subject  @relation(fields: [subjectName], references: [name])
+}
+
+model Marks {
+    id        String  @id @default(cuid())
+    studentId String
+    testId    String
+    marks     Int
+    absent    Boolean
+    test      Test    @relation(fields: [testId], references: [id])
+    student   Student @relation(fields: [studentId], references: [id])
+}
+
+model Subject {
+    name         String         @id @unique
+    tests        Test[]
+    groups       Group[]
+    classSubject ClassSubject[]
+}
+
+model Group {
+    id       String    @id @default(cuid())
+    name     String    @unique
+    subjects Subject[]
+    students Student[]
+}
+
+model Notice {
+    id        String   @id @default(cuid())
+    title     String
+    content   String
+    classId   String
+    class     Class    @relation(fields: [classId], references: [id])
+    createdAt DateTime @default(now())
+}
+
+model Session {
+    id       String    @id @default(cuid())
+    start    DateTime
+    end      DateTime
+    classes  Class[]
+    teachers Teacher[]
+}
+
+model AuthSession {
+    id        String   @id @default(cuid())
+    userId    String
+    user      User     @relation(fields: [userId], references: [id])
+    createdAt DateTime @default(now())
+    ua        String
+}
