@@ -28,4 +28,6 @@ app.register(authRoutes);
 app.register(adminRoutes);
 app.register(teacherRoutes);
 
-app.listen({ port: 1337 });
+const port = process.env.PORT ? parseInt(process.env.PORT) : 1337;
+
+app.listen({ port });
