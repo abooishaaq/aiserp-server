@@ -20,7 +20,7 @@ const routes = async (app: FastifyInstance) => {
 
         reply.send({
             success: true,
-            user
+            user,
         });
     });
 
@@ -29,40 +29,40 @@ const routes = async (app: FastifyInstance) => {
         const auth = request.headers.authorization?.replace("Bearer ", "");
 
         if (auth) {
+            // delete session from the db and create new session
+
+            const decoded = jwt.decode(auth);
+            
+            if (decoded) {
+                const { session: oldSession } = decoded as { session: string };
+
+                if (oldSession) {
+                    await prisma.authSession.delete({
+                        where: {
+                            id: oldSession,
+                        },
+                    });
+                }
+            }
+
             const user = await getUser(auth);
 
             if (user) {
-                // delete session from the db and create new session
 
                 const session = await prisma.authSession.create({
                     data: {
                         user: {
                             connect: {
-                                id: user.id
-                            }
+                                id: user.id,
+                            },
                         },
                         ua: request.headers["user-agent"] || "",
-                    }
+                    },
                 });
-
-                const decoded = jwt.decode(auth);
-
-                if (decoded) {
-                    const { session: oldSession } = decoded as { session: string };
-
-                    if (oldSession) {
-                        await prisma.authSession.delete({
-                            where: {
-                                id: oldSession
-                            }
-                        });
-                    }
-                }
-
 
                 reply.send({
                     success: true,
-                    token: jwt.sign({ session: session.id }, secret)
+                    token: jwt.sign({ session: session.id }, secret),
                 });
                 return;
             }
