@@ -6,7 +6,24 @@ const admins = JSON.parse(fs.readFileSync("admins.json", "utf8"));
 
 (async () => {
     for (const admin of admins) {
-        console.log(admin);
+        const user = prisma.user.findFirst({
+            where: {
+                email: admin.email,
+            },
+        });
+
+        if (!user) {
+            await prisma.user.create({
+                data: {
+                    email: admin.email,
+                    phone: admin.phone,
+                    name: admin.name,
+                    type: UserType.SU,
+                },
+            });
+            continue;
+        }
+
         await prisma.user.update({
             where: {
                 email: admin.email,
@@ -14,7 +31,7 @@ const admins = JSON.parse(fs.readFileSync("admins.json", "utf8"));
             data: {
                 type: UserType.SU,
                 phone: admin.phone,
-            }
+            },
         });
     }
 })();
@@ -43,7 +60,7 @@ const admins = JSON.parse(fs.readFileSync("admins.json", "utf8"));
     const users = await prisma.user.findMany({
         where: {
             type: UserType.SU,
-        }
+        },
     });
     console.log(users);
-})()
+})();
