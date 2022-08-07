@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "target": "es2015",
+        "module": "NodeNext",
+        "strict": true,
+        "typeRoots": ["types", "node_modules/@types"],
+        "esModuleInterop": true,
+        // When using above interop will get missing default export error from type check since
+        // modules use "export =" instead of "export default", enable this to ignore errors.
+        "allowSyntheticDefaultImports": true
+    }
+}

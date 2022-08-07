@@ -24,6 +24,39 @@ const routes = async (app: FastifyInstance) => {
         });
     });
 
+    app.post("/api/logout", async (request, reply) => {
+        const auth = request.headers.authorization?.replace("Bearer ", "");
+
+        if (!auth) {
+            reply.code(401).send({ error: "Not logged in" });
+            return;
+        }
+
+        // verify jwt token
+        try {
+            const decoded = jwt.verify(auth, secret) as { session: string };
+
+            if (!decoded) {
+                reply.code(401).send({ error: "Not logged in" });
+                return;
+            }
+
+            // revoke token
+            // delete auth session from the database
+
+            prisma.authSession.delete({
+                where: {
+                    id: decoded.session,
+                },
+            });
+        } catch (err) {
+            reply.code(401).send({ error: "Not logged in" });
+            return;
+        }
+
+        reply.redirect("/");
+    });
+
     app.post("/api/login", async (request, reply) => {
         // see if authorization header is authentic
         const auth = request.headers.authorization?.replace("Bearer ", "");
@@ -32,23 +65,26 @@ const routes = async (app: FastifyInstance) => {
             // delete session from the db and create new session
 
             const decoded = jwt.decode(auth);
-            
+
             if (decoded) {
                 const { session: oldSession } = decoded as { session: string };
 
                 if (oldSession) {
-                    await prisma.authSession.delete({
-                        where: {
-                            id: oldSession,
-                        },
-                    });
+                    try {
+                        await prisma.authSession.delete({
+                            where: {
+                                id: oldSession,
+                            },
+                        });
+                    } catch (err) {
+                        console.log(err);
+                    }
                 }
             }
 
             const user = await getUser(auth);
 
             if (user) {
-
                 const session = await prisma.authSession.create({
                     data: {
                         user: {
@@ -75,9 +111,19 @@ const routes = async (app: FastifyInstance) => {
 
         const user = await prisma.user.findFirst({
             where: {
-                email: decodedToken.email,
+                OR: [
+                    {
+                        email: decodedToken.email,
+                    },
+                    {
+                        phone: decodedToken.phone_number,
+                    },
+                ],
             },
         });
+
+        console.log("user", user);
+
         if (!user) {
             await reply.status(401).send({ error: "Account doesn't exists" });
             return;
@@ -99,6 +145,31 @@ const routes = async (app: FastifyInstance) => {
         reply.send({
             token: jwtToken,
         });
+    });
+
+    app.get("/api/phone", async (request, reply) => {
+        const { phone } = request.query as { phone: string };
+
+        if (!phone) {
+            reply.code(400).send({ error: "No phone number provided" });
+            return;
+        }
+
+        const user = await prisma.user.findFirst({
+            where: {
+                phone,
+            },
+        });
+
+        if (user) {
+            reply.send({
+                yes: true,
+            });
+        } else {
+            reply.send({
+                no: true,
+            });
+        }
     });
 };
 

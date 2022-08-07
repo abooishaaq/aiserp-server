@@ -1,6 +1,6 @@
-import { FastifyInstance } from "fastify";
-import { getUser, handleUserVerification } from "../lib/auth";
-import { User, UserType } from "@prisma/client";
+import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { getUser } from "../lib/auth";
+import { UserType } from "@prisma/client";
 import joi from "joi";
 import { addMarks, addAttendance } from "../lib/teacher";
 import { getTestsOfGrade } from "../lib/subject";
@@ -61,15 +61,22 @@ const attendance_schema = joi
     .required();
 
 const routes = async (app: FastifyInstance) => {
+    app.addHook(
+        "preHandler",
+        async (request: FastifyRequest, reply: FastifyReply) => {
+            if (
+                request.user.type !== UserType.TEACHER &&
+                request.user.type !== UserType.ADMIN &&
+                request.user.type !== UserType.SU
+            ) {
+                return reply.code(401).send({
+                    error: "Unauthorized",
+                });
+            }
+        }
+    );
+
     app.post("/api/add/marks", async (request, reply) => {
-        const verified = await handleUserVerification(
-            request,
-            reply,
-            UserType.TEACHER
-        );
-
-        if (!verified) return;
-
         const body = request.body;
 
         const { value: marks } = await marks_schema.validateAsync(body);
@@ -90,14 +97,6 @@ const routes = async (app: FastifyInstance) => {
     });
 
     app.post("/api/add/attendance", async (request, reply) => {
-        const verified = await handleUserVerification(
-            request,
-            reply,
-            UserType.ADMIN
-        );
-
-        if (!verified) return;
-
         const body = request.body;
 
         const { value: attendance } = await attendance_schema.validateAsync(
@@ -122,12 +121,7 @@ const routes = async (app: FastifyInstance) => {
         }
     });
 
-
     app.get("/api/get/tests/:grade", async (request, reply) => {
-        const verified = await handleUserVerification(request, reply, UserType.TEACHER);
-
-        if (!verified) return;
-
         let user;
         try {
             user = await getUser(request.cookies.auth);

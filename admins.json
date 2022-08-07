@@ -1,14 +1,17 @@
 [
     {
         "name": "Malik Ammar Faisal",
-        "email": "binfaisal.ammar@gmail.com" 
+        "email": "binfaisal.ammar@gmail.com",
+        "phone": "+919140248919"
     },
     {
         "name": "Binish Affan",
-        "email": "binishaffan@gmail.com"
+        "email": "binishaffan@gmail.com",
+        "phone": "+919997498600"
     },
     {
-        "name": "Ishfaq Farooq Mir",
-        "email": "ishfaqfarooq4u@gmail.com"
+        "name": "Hammad",
+        "email": "ghoulishhuman@gmail.com",
+        "phone": "+91637337376"
     }
 ]

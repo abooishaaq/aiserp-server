@@ -177,69 +177,14 @@ const update_student_schema = joi
     })
     .required();
 
-declare module "fastify" {
-    interface FastifyRequest {
-        user: {
-            id: string;
-            students: {
-                id: string;
-                name: string;
-            }[];
-            teacher: {
-                class: {
-                    id: string;
-                    grade: Grade;
-                    section: string;
-                } | null;
-            }[];
-            authSess: {
-                id: string;
-                ua: string;
-            }[];
-            name: string;
-            email: string | null;
-            type: UserType;
-        };
-    }
-}
-
 const routes = async (app: FastifyInstance) => {
-    app.addHook(
-        "preHandler",
-        async (request: FastifyRequest, reply: FastifyReply) => {
-            const auth = request.headers.authorization;
-
-            if (!auth) {
-                return reply.code(401).send({
-                    error: "Unauthorized",
-                });
-            }
-
-            const [type, token] = auth.split(" ");
-
-            if (type !== "Bearer") {
-                return reply.code(401).send({
-                    error: "Unauthorized",
-                });
-            }
-
-            const user = await getUser(token);
-
-            if (!user) {
-                return reply.code(401).send({
-                    error: "Unauthorized",
-                });
-            }
-
-            if (user.type !== UserType.ADMIN && user.type !== UserType.SU) {
-                return reply.code(401).send({
-                    error: "Unauthorized",
-                });
-            }
-
-            request.user = user;
+    app.addHook("preHandler", async (request: FastifyRequest, reply: FastifyReply) => {
+        if (request.user && request.user.type !== UserType.ADMIN && request.user.type !== UserType.SU) {
+            return reply.code(401).send({
+                error: "Unauthorized",
+            });
         }
-    );
+    });
 
     app.post("/api/add/students", async (request, reply) => {
         const body = request.body;
@@ -560,7 +505,7 @@ const routes = async (app: FastifyInstance) => {
         }
     });
 
-    app.post("/api/update/user/", async (request, reply) => {
+    app.post("/api/update/user", async (request, reply) => {
         const body = request.body;
 
         try {
@@ -816,7 +761,7 @@ const routes = async (app: FastifyInstance) => {
         });
     });
 
-    app.post("/api/delete/user/", async (request, reply) => {
+    app.post("/api/delete/user", async (request, reply) => {
         const body = request.body;
 
         try {
@@ -843,7 +788,7 @@ const routes = async (app: FastifyInstance) => {
         }
     });
 
-    app.post("/api/create/test/", async (request, reply) => {
+    app.post("/api/create/test", async (request, reply) => {
         const body = request.body;
 
         try {
@@ -875,7 +820,7 @@ const routes = async (app: FastifyInstance) => {
         }
     });
 
-    app.get("/api/get/activity/", async (request, reply) => {
+    app.get("/api/get/activity", async (request, reply) => {
         if (request.user.type !== "SU") {
             reply.status(400).send({
                 success: false,
