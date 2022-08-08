@@ -109,6 +109,9 @@ const routes = async (app: FastifyInstance) => {
         };
         const decodedToken = await getAuth(admin.apps[0]!).verifyIdToken(token);
 
+        console.log("firebase email", decodedToken.email);
+        console.log("firebase phone", decodedToken.phone_number);
+
         const user = await prisma.user.findFirst({
             where: {
                 OR: [
@@ -122,7 +125,7 @@ const routes = async (app: FastifyInstance) => {
             },
         });
 
-        console.log("user", user);
+        console.log("database user", user);
 
         if (!user) {
             await reply.status(401).send({ error: "Account doesn't exists" });
