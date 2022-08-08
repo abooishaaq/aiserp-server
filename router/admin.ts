@@ -768,6 +768,24 @@ const routes = async (app: FastifyInstance) => {
                 .object({ id: joi.string().required() })
                 .validateAsync(body);
 
+            const user = await getUserById(id);
+
+            if (!user) {
+                reply.status(400).send({
+                    success: false,
+                    message: "User not found",
+                });
+                return;
+            }
+
+            if (user.type === "SU") {
+                reply.status(400).send({
+                    success: false,
+                    message: "Cannot delete superuser",
+                });
+                return;
+            }
+
             await deleteUser(id);
 
             reply.status(200).send({
