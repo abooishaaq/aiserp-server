@@ -46,7 +46,6 @@ import {
     getTeachersBySubject,
     updateClassSubject,
 } from "../lib/subject";
-import { getUser } from "../lib/auth";
 
 import deque from "../deque";
 
