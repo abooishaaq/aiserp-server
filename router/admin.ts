@@ -177,8 +177,8 @@ const update_student_schema = joi
     .required();
 
 const routes = async (app: FastifyInstance) => {
-    app.addHook("preHandler", async (request: FastifyRequest, reply: FastifyReply) => {
-        if (request.user && request.user.type !== UserType.ADMIN && request.user.type !== UserType.SU) {
+    app.addHook("onRequest", async (request: FastifyRequest, reply: FastifyReply) => {
+        if (!request.user || (request.user.type !== UserType.ADMIN && request.user.type !== UserType.SU)) {
             return reply.code(401).send({
                 error: "Unauthorized",
             });
