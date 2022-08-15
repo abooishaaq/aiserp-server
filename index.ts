@@ -24,12 +24,6 @@ app.register(cookie, {
     secret: crypto.randomBytes(1024).toString("base64"),
 });
 
-app.register(async (instance: FastifyInstance, opts, next) => {
-    instance.addHook("onRequest", async (request, reply) => {
-        reply.header("Cache-Control", `max-age=${60 * 60 * 5}`);
-    });
-});
-
 declare module "fastify" {
     interface FastifyRequest {
         user: {
@@ -60,7 +54,7 @@ app.register(authRoutes);
 
 app.register(async (app: FastifyInstance) => {
     app.addHook(
-        "preHandler",
+        "onRequest",
         async (request: FastifyRequest, reply: FastifyReply) => {
             const auth = request.headers.authorization;
 
@@ -89,10 +83,10 @@ app.register(async (app: FastifyInstance) => {
             request.user = user;
         }
     );
-});
 
-app.register(adminRoutes);
-app.register(teacherRoutes);
+    app.register(adminRoutes);
+    app.register(teacherRoutes);
+});
 
 const port = process.env.PORT ? parseInt(process.env.PORT) : 1337;
 
