@@ -23,6 +23,8 @@ export const addStudents = async (
         group: string;
     }[]
 ) => {
+    const session = await latestSession();
+
     // fetch student profiles from the db
 
     const profiles: StudentProfile[] = [];
@@ -41,6 +43,38 @@ export const addStudents = async (
         }
     }
 
+    // check if the student is already in the db
+
+    const existingStudents = await prisma.student.findMany({
+        where: {
+            profile: {
+                srNo: {
+                    in: students.map((p) => p.srNo),
+                },
+            },
+            class: {
+                session: {
+                    id: session.id,
+                },
+            },
+        },
+        select: {
+            profile: {
+                select: {
+                    srNo: true,
+                },
+            },
+        },
+    });
+
+    if (existingStudents.length > 0) {
+        throw new Error(
+            `serial numbers: ${existingStudents
+                .map((s) => s.profile.srNo)
+                .join(", ")} already exist for the current session`
+        );
+    }
+
     // add students to the db
 
     // check for duplicate roll numbers for each class
@@ -57,6 +91,7 @@ export const addStudents = async (
         if (classToRollNos[key].has(students[i].rollNo)) {
             throw new Error(`Duplicate rollNo - ${students[i].rollNo}`);
         }
+        classToRollNos[key].add(students[i].rollNo);
     }
 
     const classes = await getCurrClassesByGradeSection(
@@ -98,28 +133,30 @@ export const addStudents = async (
         })
     );
 
-    return await Promise.all(profiles.map((profile, i) => {
-        return prisma.student.create({
-            data: {
-                rollNo: students[i].rollNo,
-                class: {
-                    connect: {
-                        id: classes[i].id,
+    return await Promise.all(
+        profiles.map((profile, i) => {
+            return prisma.student.create({
+                data: {
+                    rollNo: students[i].rollNo,
+                    class: {
+                        connect: {
+                            id: classes[i].id,
+                        },
+                    },
+                    profile: {
+                        connect: {
+                            id: profile.id,
+                        },
+                    },
+                    subjects: {
+                        connect: {
+                            id: groups[i].id,
+                        },
                     },
                 },
-                profile: {
-                    connect: {
-                        id: profile.id,
-                    },
-                },
-                subjects: {
-                    connect: {
-                        id: groups[i].id,
-                    },
-                },
-            },
-        });
-    }));
+            });
+        })
+    );
 };
 
 export const addProfiles = async (
@@ -269,15 +306,7 @@ export const getStudent = (id: string) => {
                     subjects: {
                         select: {
                             name: true,
-                            tests: {
-                                where: {
-                                    marks: {
-                                        some: {
-                                            studentId: id,
-                                        },
-                                    },
-                                },
-                            },
+                            tests: true,
                         },
                     },
                 },
@@ -453,13 +482,13 @@ export const getCurrStudents = async () => {
             profile: {
                 select: {
                     name: true,
-                    users:{
+                    users: {
                         select: {
                             id: true,
                             email: true,
                             phone: true,
-                        }
-                    }
+                        },
+                    },
                 },
             },
             rollNo: true,
