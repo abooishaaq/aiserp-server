@@ -16,7 +16,7 @@ export const decodeJwt = (token: string) => {
 export const handleUserVerification = async (
     request: FastifyRequest,
     reply: FastifyReply,
-    type: UserType,
+    type: UserType
 ) => {
     const unauth = () => {
         reply.status(401).send({
@@ -35,7 +35,12 @@ export const handleUserVerification = async (
 
         const user = await getUser(token);
 
-        if (user && (user.type === type || user.type === UserType.ADMIN || user.type === UserType.SU)) {
+        if (
+            user &&
+            (user.type === type ||
+                user.type === UserType.ADMIN ||
+                user.type === UserType.SU)
+        ) {
             return true;
         }
 
@@ -95,12 +100,22 @@ export const getUser = async (token: string) => {
                             section: true,
                         },
                     },
+                    classSubjects: {
+                        select: {
+                            id: true,
+                            class: {
+                                select: {
+                                    id: true,
+                                },
+                            },
+                        },
+                    },
                 },
                 where: {
                     session: {
                         id: session?.id,
                     },
-                }
+                },
             },
             students: {
                 select: {
@@ -113,7 +128,7 @@ export const getUser = async (token: string) => {
                     id: true,
                     ua: true,
                 },
-            }
+            },
         },
     });
 
