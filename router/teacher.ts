@@ -1,10 +1,8 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { getUser } from "../lib/auth";
 import { UserType } from "@prisma/client";
 import joi from "joi";
-import { addMarks, addAttendance } from "../lib/teacher";
-import { getTestsOfGrade } from "../lib/subject";
-import { getClass } from "../lib/class";
+import { addNotices, getAllNotices } from "../lib/teacher";
+import { getGradeSectionFromClasses } from "../lib/class";
 
 const test_schema = joi
     .object({
@@ -60,6 +58,18 @@ const attendance_schema = joi
     })
     .required();
 
+const add_notice_schema = joi
+    .object({
+        notice: joi
+            .object({
+                title: joi.string().required(),
+                content: joi.string().required(),
+            })
+            .required(),
+        classes: joi.array().items(joi.string().required()).required(),
+    })
+    .required();
+
 const routes = async (app: FastifyInstance) => {
     app.addHook(
         "onRequest",
@@ -77,76 +87,65 @@ const routes = async (app: FastifyInstance) => {
         }
     );
 
-    app.post("/api/add/marks", async (request, reply) => {
+    app.post("/api/add/notice", async (request, reply) => {
         const body = request.body;
 
-        const { value: marks } = await marks_schema.validateAsync(body);
+        const { notice, classes } = await add_notice_schema.validateAsync(body);
 
-        if (!marks) {
-            reply.status(400).send({
-                error: "Invalid data",
-            });
-            return;
+        if (request.user.type === UserType.TEACHER) {
+            const teacherClasses = request.user.teacher[0].classSubjects.map(
+                (c) => c.class.id
+            );
+
+            if (!classes.every((c: string) => teacherClasses.includes(c))) {
+                reply.status(401).send({
+                    success: false,
+                    message: "Unauthorized",
+                });
+                return;
+            }
         }
 
-        const { testId, marks: marks_ } = marks;
-
-        for (let i = 0; i < marks_.length; i++) {
-            const { studentId, marks: marks__, absent } = marks_[i];
-            await addMarks(testId, studentId, marks__, absent);
-        }
-    });
-
-    app.post("/api/add/attendance", async (request, reply) => {
-        const body = request.body;
-
-        const { value: attendance } = await attendance_schema.validateAsync(
-            body
-        );
-
-        if (!attendance) {
-            reply.status(400).send({
-                error: "Invalid teacher",
-            });
-            return;
-        }
-
-        const { date, studentIds, presence } = attendance;
-
-        const datee = new Date(date);
-
-        const dates = new Array(studentIds.length).fill(datee);
-
-        for (let i = 0; i < studentIds.length; i++) {
-            await addAttendance(studentIds[i], presence[i], dates);
-        }
-    });
-
-    app.get("/api/get/tests/:grade", async (request, reply) => {
-        let user;
-        try {
-            user = await getUser(request.cookies.auth);
-        } catch (error) {
-            reply.status(401).send({
-                error: "Unauthorized",
-            });
-            return;
-        }
-
-        const { grade } = request.params as { grade: string };
-
-        if (!grade) {
-            reply.status(400).send({
-                error: "Invalid data",
-            });
-            return;
-        }
-
-        const tests = await getTestsOfGrade(grade);
+        await addNotices(notice.title, notice.content, classes);
 
         reply.status(200).send({
             success: true,
-            tests,
+        });
+    });
+
+    app.get("/api/get/notices", async (request, reply) => {
+        const notices = await getAllNotices();
+
+        reply.status(200).send({
+            success: true,
+            notices,
+        });
+    });
+
+    // given class id
+    app.get("/api/get/grade-section/:ids", async (request, reply) => {
+        const ids = (request.params as { ids: string }).ids;
+
+        if (!ids) {
+            reply.status(400).send({
+                success: false,
+                message: "Invalid request",
+            });
+            return;
+        }
+
+        const class_ = await getGradeSectionFromClasses(ids.split(","));
+
+        if (!class_) {
+            reply.status(404).send({
+                success: false,
+                message: "Class not found",
+            });
+        }
+
+        reply.status(200).send({
+            success: true,
+            class: class_,
         });
     });
 };

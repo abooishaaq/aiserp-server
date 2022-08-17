@@ -19,7 +19,11 @@ export const addTeacher = async (userId: string, classId: string) => {
     });
 };
 
-export const addTeachers = async (names: string[], emails: string[], phones: string[]) => {
+export const addTeachers = async (
+    names: string[],
+    emails: string[],
+    phones: string[]
+) => {
     const session = await latestSession();
 
     if (!session) {
@@ -30,7 +34,12 @@ export const addTeachers = async (names: string[], emails: string[], phones: str
         throw new Error("names, emails, phones must be the same length");
     }
 
-    const users = await addUsersWithEmailPhone(emails, phones, names, UserType.TEACHER);
+    const users = await addUsersWithEmailPhone(
+        emails,
+        phones,
+        names,
+        UserType.TEACHER
+    );
     return await Promise.all(
         emails.map(async (_, i) => {
             // check if the teacher is already added
@@ -440,3 +449,39 @@ export const getSubjectTeachers = (subject: string) => {
         },
     });
 };
+
+export const addNotices = (
+    title: string,
+    content: string,
+    classIds: string[]
+) => {
+    return Promise.all(
+        classIds.map((classId) => {
+            return prisma.notice.create({
+                data: {
+                    title,
+                    content,
+                    class: {
+                        connect: {
+                            id: classId,
+                        },
+                    },
+                },
+            });
+        })
+    );
+};
+
+export const getAllNotices = () => {
+    return prisma.notice.findMany();
+};
+
+export const getNoticesByClass = (classId: string) => {
+    return prisma.notice.findMany({
+        where: {
+            class: {
+                id: classId,
+            },
+        },
+    });
+}

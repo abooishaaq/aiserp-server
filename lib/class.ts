@@ -93,6 +93,13 @@ export const getClass = async (id: string) => {
                     },
                 },
             },
+            notices: {
+                select: {
+                    id: true,
+                    title: true,
+                    content: true,
+                }
+            },
             students: {
                 select: {
                     id: true,
@@ -463,3 +470,17 @@ export const getSessionClasses = async (sessionId: string) => {
 
     return { session, classes };
 };
+
+export const getGradeSectionFromClasses = (classIds: string[]) => {
+    return prisma.class.findMany({
+        where: {
+            id: {
+                in: classIds,
+            },
+        },
+        select: {
+            grade: true,
+            section: true,
+        },
+    });
+}
