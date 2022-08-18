@@ -121,6 +121,18 @@ export const getUser = async (token: string) => {
                 select: {
                     id: true,
                     name: true,
+                    students: {
+                        select: {
+                            id: true,
+                        },
+                        where: {
+                            class: {
+                                session: {
+                                    id: session?.id,
+                                },
+                            },
+                        },
+                    },
                 },
             },
             authSess: {
