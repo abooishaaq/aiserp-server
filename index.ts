@@ -38,6 +38,12 @@ declare module "fastify" {
                     grade: Grade;
                     section: string;
                 } | null;
+                classSubjects: {
+                    id: string;
+                    class: {
+                        id: string;
+                    };
+                }[];
             }[];
             authSess: {
                 id: string;
