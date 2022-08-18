@@ -33,7 +33,7 @@ declare module "fastify" {
                 name: string;
                 students: {
                     id: string;
-                }
+                }[]
             }[];
             teacher: {
                 class: {
