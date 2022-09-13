@@ -27,7 +27,7 @@ class Deque {
         item.id = uuidv4();
         this.items.push(item);
         if (this.items.length > this.maxlen) {
-            this.items.shift();
+            this.items = this.items.slice(1);
         }
         fs.writeFileSync("activity.json", JSON.stringify(this.items));
     }
