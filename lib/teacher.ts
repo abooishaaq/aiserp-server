@@ -246,21 +246,65 @@ export const getTeacher = (id: string) => {
 };
 
 export const addAttendance = async (
-    studentIds: string[],
-    presence: boolean[],
-    date: Date[]
+    classId: string,
+    absentees: Set<string>
 ) => {
-    if (studentIds.length !== presence.length) {
-        throw new Error("studentIds and presence must be the same length");
+    const session = await latestSession();
+    if (!session) {
+        throw new Error("No session found");
     }
 
-    for (let i = 0; i < studentIds.length; i++) {
-        await prisma.attendance.create({
-            data: {
-                studentId: studentIds[i],
-                present: presence[i],
-                date: date[i],
+    const class_ = await prisma.class.findFirst({
+        where: {
+            id: classId,
+        },
+        select: {
+            id: true,
+            grade: true,
+            section: true,
+            students: {
+                select: {
+                    id: true,
+                },
             },
+        },
+    });
+
+    if (!class_) {
+        throw new Error("class not found");
+    }
+
+    // check if attendance already added 
+    // date: gte current day's start and lt next day's start
+    const attendance = await prisma.attendanceMarked.findFirst({
+        where: {
+            classId: classId,
+            date: {
+                gte: new Date(new Date().setHours(0, 0, 0, 0)),
+                lt: new Date(new Date().setHours(24, 0, 0, 0)),
+            }
+        },
+    });
+
+    if (attendance) {
+        throw new Error("Attendance already added for today");
+    }
+
+    await prisma.attendanceMarked.create({
+        data: {
+            classId: classId,
+            date: new Date(),
+        }
+    });
+
+    const presence = class_.students.map((s) => ({
+        studentId: s.id,
+        present: !absentees.has(s.id),
+    }));
+
+    for (const p of presence) {
+        await prisma.attendance.create({
+            data: p,
         });
     }
 };
@@ -408,8 +452,7 @@ export const getTest = (id: string) => {
 
 export const getAttendance = async (
     classId: string,
-    month: number,
-    year: number
+    date: Date
 ) => {
     const students = await prisma.student.findMany({
         where: { class: { id: classId } },
@@ -418,8 +461,7 @@ export const getAttendance = async (
     const attendance = await prisma.attendance.findMany({
         where: {
             date: {
-                gte: new Date(year, month, 1),
-                lte: new Date(year, month + 1, 0),
+                equals: date,
             },
             studentId: {
                 in: students.map((student) => student.id),
@@ -450,12 +492,12 @@ export const getSubjectTeachers = (subject: string) => {
     });
 };
 
-export const addNotices = (
+export const addNotices = async (
     title: string,
     content: string,
     classIds: string[]
 ) => {
-    return Promise.all(
+    const notices = await Promise.all(
         classIds.map((classId) => {
             return prisma.notice.create({
                 data: {
@@ -484,4 +526,4 @@ export const getNoticesByClass = (classId: string) => {
             },
         },
     });
-}
+};

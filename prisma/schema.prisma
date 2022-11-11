@@ -121,10 +121,16 @@ model ClassSubject {
 }
 
 model Attendance {
-    id        String   @id @default(cuid())
-    date      DateTime @default(now())
+    id        String             @id @default(cuid())
+    date      DateTime           @default(now())
     studentId String
     present   Boolean
+}
+
+model AttendanceMarked {
+    id         String       @id @default(cuid())
+    date       DateTime     @default(now())
+    classId    String
 }
 
 enum TestType {

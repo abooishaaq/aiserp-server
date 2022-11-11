@@ -1,8 +1,14 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { UserType } from "@prisma/client";
 import joi from "joi";
-import { addNotices, getAllNotices } from "../lib/teacher";
-import { getGradeSectionFromClasses } from "../lib/class";
+import {
+    addNotices,
+    getAllNotices,
+    addAttendance,
+    getAttendance,
+    getNoticesByClass,
+} from "../lib/teacher";
+import { getGradeSectionFromClasses, getStudentsFromClass } from "../lib/class";
 
 const test_schema = joi
     .object({
@@ -42,19 +48,8 @@ const marks_schema = joi
 
 const attendance_schema = joi
     .object({
-        attendance: joi
-            .object({
-                date: joi.string().required(),
-                studentIds: joi
-                    .array()
-                    .items(joi.string().required())
-                    .required(),
-                presence: joi
-                    .array()
-                    .items(joi.boolean().required())
-                    .required(),
-            })
-            .required(),
+        absent: joi.array().items(joi.string().required()).required(),
+        class: joi.string().required(),
     })
     .required();
 
@@ -87,6 +82,19 @@ const routes = async (app: FastifyInstance) => {
         }
     );
 
+    app.get("/api/get/students-class/:id", async (request, reply) => {
+        const { id } = request.params as {
+            id: string;
+        };
+
+        const students = await getStudentsFromClass(id);
+
+        reply.status(200).send({
+            success: true,
+            students,
+        });
+    });
+
     app.post("/api/add/notice", async (request, reply) => {
         const body = request.body;
 
@@ -114,12 +122,27 @@ const routes = async (app: FastifyInstance) => {
     });
 
     app.get("/api/get/notices", async (request, reply) => {
-        const notices = await getAllNotices();
+        if (request.user.type === UserType.TEACHER) {
+            const teacherClasses = request.user.teacher[0].classSubjects.map(
+                (c) => c.class.id
+            );
 
-        reply.status(200).send({
-            success: true,
-            notices,
-        });
+            const notices = await Promise.all(
+                teacherClasses.map(getNoticesByClass)
+            );
+
+            reply.status(200).send({
+                success: true,
+                notices,
+            });
+        } else {
+            const notices = await getAllNotices();
+
+            reply.status(200).send({
+                success: true,
+                notices,
+            });
+        }
     });
 
     // given class id
@@ -146,6 +169,90 @@ const routes = async (app: FastifyInstance) => {
         reply.status(200).send({
             success: true,
             class: class_,
+        });
+    });
+
+    app.post("/api/add/attendance", async (request, reply) => {
+        const body = request.body;
+
+        const attendance = await attendance_schema.validateAsync(body);
+
+        if (request.user.type === UserType.TEACHER) {
+            const teacherClasses = request.user.teacher[0].classSubjects.map(
+                (c) => c.class.id
+            );
+
+            if (!teacherClasses.includes(attendance.class)) {
+                console.log("ybiujnk");
+                reply.status(401).send({
+                    success: false,
+                    message: "Unauthorized",
+                });
+                return;
+            }
+        }
+
+        try {
+            await addAttendance(attendance.class, new Set(attendance.absent));
+
+            reply.status(200).send({
+                success: true,
+            });
+        } catch (e) {
+            reply.status(400).send({
+                success: false,
+                message: (
+                    e as {
+                        message: string;
+                    }
+                ).message,
+            });
+        }
+    });
+
+    app.get("/api/get/attendance/:classId/:date", async (request, reply) => {
+        const { classId, date } = request.params as {
+            classId: string;
+            date: string;
+        };
+
+        if (!classId || !date) {
+            reply.status(400).send({
+                success: false,
+                message: "Invalid request",
+            });
+            return;
+        }
+
+        if (request.user.type === UserType.TEACHER) {
+            const teacherClasses = request.user.teacher[0].classSubjects.map(
+                (c) => c.class.id
+            );
+
+            if (!teacherClasses.includes(classId)) {
+                reply.status(401).send({
+                    success: false,
+                    message: "Unauthorized",
+                });
+                return;
+            }
+        }
+
+        const date_ = new Date(date);
+
+        if (isNaN(date_.getTime())) {
+            reply.status(400).send({
+                success: false,
+                message: "Invalid date",
+            });
+            return;
+        }
+
+        const attendance = await getAttendance(classId, date_);
+
+        reply.status(200).send({
+            success: true,
+            attendance,
         });
     });
 };

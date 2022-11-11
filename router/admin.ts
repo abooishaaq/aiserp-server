@@ -1,7 +1,7 @@
 import joi from "joi";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { handleUserVerification } from "../lib/auth";
-import { Grade, StudentProfile, Teacher, User, UserType } from "@prisma/client";
+import { UserType } from "@prisma/client";
 import {
     addProfiles,
     addStudents,
@@ -177,13 +177,20 @@ const update_student_schema = joi
     .required();
 
 const routes = async (app: FastifyInstance) => {
-    app.addHook("onRequest", async (request: FastifyRequest, reply: FastifyReply) => {
-        if (!request.user || (request.user.type !== UserType.ADMIN && request.user.type !== UserType.SU)) {
-            return reply.code(401).send({
-                error: "Unauthorized",
-            });
+    app.addHook(
+        "onRequest",
+        async (request: FastifyRequest, reply: FastifyReply) => {
+            if (
+                !request.user ||
+                (request.user.type !== UserType.ADMIN &&
+                    request.user.type !== UserType.SU)
+            ) {
+                return reply.code(401).send({
+                    error: "Unauthorized",
+                });
+            }
         }
-    });
+    );
 
     app.post("/api/add/students", async (request, reply) => {
         const body = request.body;
