@@ -247,7 +247,8 @@ export const getTeacher = (id: string) => {
 
 export const addAttendance = async (
     classId: string,
-    absentees: Set<string>
+    absentees: Set<string>,
+    updating: boolean = false
 ) => {
     const session = await latestSession();
     if (!session) {
@@ -274,28 +275,30 @@ export const addAttendance = async (
         throw new Error("class not found");
     }
 
-    // check if attendance already added 
-    // date: gte current day's start and lt next day's start
-    const attendance = await prisma.attendanceMarked.findFirst({
-        where: {
-            classId: classId,
-            date: {
-                gte: new Date(new Date().setHours(0, 0, 0, 0)),
-                lt: new Date(new Date().setHours(24, 0, 0, 0)),
-            }
-        },
-    });
+    if (!updating) {
+        // check if attendance already added
+        // date: gte current day's start and lt next day's start
+        const attendance = await prisma.attendanceMarked.findFirst({
+            where: {
+                classId: classId,
+                date: {
+                    gte: new Date(new Date().setHours(0, 0, 0, 0)),
+                    lt: new Date(new Date().setHours(24, 0, 0, 0)),
+                },
+            },
+        });
 
-    if (attendance) {
-        throw new Error("Attendance already added for today");
-    }
-
-    await prisma.attendanceMarked.create({
-        data: {
-            classId: classId,
-            date: new Date(),
+        if (attendance) {
+            throw new Error("Attendance already added for today");
         }
-    });
+
+        await prisma.attendanceMarked.create({
+            data: {
+                classId: classId,
+                date: new Date(),
+            },
+        });
+    }
 
     const presence = class_.students.map((s) => ({
         studentId: s.id,
@@ -450,10 +453,7 @@ export const getTest = (id: string) => {
     });
 };
 
-export const getAttendance = async (
-    classId: string,
-    date: Date
-) => {
+export const getAttendance = async (classId: string, date: Date) => {
     const students = await prisma.student.findMany({
         where: { class: { id: classId } },
     });

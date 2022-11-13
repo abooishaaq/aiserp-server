@@ -254,6 +254,43 @@ const routes = async (app: FastifyInstance) => {
             attendance,
         });
     });
+
+    app.post("/api/update/attendance", async (request, reply) => {
+        const body = request.body;
+
+        const attendance = await attendance_schema.validateAsync(body);
+
+        if (request.user.type === UserType.TEACHER) {
+            const teacherClasses = request.user.teacher[0].classSubjects.map(
+                (c) => c.class.id
+            );
+
+            if (!teacherClasses.includes(attendance.class)) {
+                reply.status(401).send({
+                    success: false,
+                    message: "Unauthorized",
+                });
+                return;
+            }
+        }
+
+        try {
+            await addAttendance(attendance.class, new Set(attendance.absent), true);
+
+            reply.status(200).send({
+                success: true,
+            });
+        } catch (e) {
+            reply.status(400).send({
+                success: false,
+                message: (
+                    e as {
+                        message: string;
+                    }
+                ).message,
+            });
+        }
+    });
 };
 
 export default routes;
