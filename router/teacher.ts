@@ -183,7 +183,6 @@ const routes = async (app: FastifyInstance) => {
             );
 
             if (!teacherClasses.includes(attendance.class)) {
-                console.log("ybiujnk");
                 reply.status(401).send({
                     success: false,
                     message: "Unauthorized",
