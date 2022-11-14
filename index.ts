@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import authRoutes from "./router/auth";
 import teacherRoutes from "./router/teacher";
+import studentRoutes from "./router/student";
 import adminRoutes from "./router/admin";
 import { getUser } from "./lib/auth";
 import { Grade, UserType } from "@prisma/client";
@@ -95,6 +96,7 @@ app.register(async (app: FastifyInstance) => {
 
     app.register(adminRoutes);
     app.register(teacherRoutes);
+    app.register(studentRoutes);
 });
 
 const port = process.env.PORT ? parseInt(process.env.PORT) : 1337;
