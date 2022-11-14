@@ -16,14 +16,14 @@ const routes = async (app: FastifyInstance) => {
 
     app.get("/api/get/student-notices/:id/:page", async (request, reply) => {
         const { id, page } = request.params as { id: string, page: string };
-
-        if (!id || !page) {
+    
+        if (!id) {
             return reply.code(400).send({
                 error: "Bad Request",
             });
         }
 
-        const pagen = Number(page);
+        const pagen = page ? Number(page) : 0;
 
         if (isNaN(pagen)) {
             return reply.status(400);
@@ -59,9 +59,20 @@ const routes = async (app: FastifyInstance) => {
             }
         });
 
+        const count = await prisma.notice.count({
+            where: {
+                class: {
+                    id: students_class?.class.id,
+                },
+            },
+        });
+
+        const page_count = count / 10 + (count % 10 ? 1 : 0);
+
         reply.status(200).send({
             success: true,
             notices,
+            page_count,
         });
     });
 };
