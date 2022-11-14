@@ -177,18 +177,14 @@ const routes = async (app: FastifyInstance) => {
 
         const attendance = await attendance_schema.validateAsync(body);
 
-        if (request.user.type === UserType.TEACHER) {
-            const teacherClasses = request.user.teacher[0].classSubjects.map(
-                (c) => c.class.id
-            );
-
-            if (!teacherClasses.includes(attendance.class)) {
-                reply.status(401).send({
-                    success: false,
-                    message: "Unauthorized",
-                });
-                return;
-            }
+        if (
+            request.user.type === UserType.TEACHER &&
+            request.user.teacher[0].class?.id !== attendance.class
+        ) {
+            return reply.status(401).send({
+                success: false,
+                message: "Unauthorized",
+            });
         }
 
         try {
@@ -223,18 +219,14 @@ const routes = async (app: FastifyInstance) => {
             return;
         }
 
-        if (request.user.type === UserType.TEACHER) {
-            const teacherClasses = request.user.teacher[0].classSubjects.map(
-                (c) => c.class.id
-            );
-
-            if (!teacherClasses.includes(classId)) {
-                reply.status(401).send({
-                    success: false,
-                    message: "Unauthorized",
-                });
-                return;
-            }
+        if (
+            request.user.type === UserType.TEACHER &&
+            request.user.teacher[0].class?.id !== classId
+        ) {
+            return reply.status(401).send({
+                success: false,
+                message: "Unauthorized",
+            });
         }
 
         const date_ = new Date(date);
@@ -260,22 +252,22 @@ const routes = async (app: FastifyInstance) => {
 
         const attendance = await attendance_schema.validateAsync(body);
 
-        if (request.user.type === UserType.TEACHER) {
-            const teacherClasses = request.user.teacher[0].classSubjects.map(
-                (c) => c.class.id
-            );
-
-            if (!teacherClasses.includes(attendance.class)) {
-                reply.status(401).send({
-                    success: false,
-                    message: "Unauthorized",
-                });
-                return;
-            }
+        if (
+            request.user.type === UserType.TEACHER &&
+            request.user.teacher[0].class?.id !== attendance.class
+        ) {
+            return reply.status(401).send({
+                success: false,
+                message: "Unauthorized",
+            });
         }
 
         try {
-            await addAttendance(attendance.class, new Set(attendance.absent), true);
+            await addAttendance(
+                attendance.class,
+                new Set(attendance.absent),
+                true
+            );
 
             reply.status(200).send({
                 success: true,
