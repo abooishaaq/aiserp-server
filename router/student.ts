@@ -46,7 +46,7 @@ const routes = async (app: FastifyInstance) => {
             }
         });
 
-        const notices = prisma.notice.findMany({
+        const notices = await prisma.notice.findMany({
             where: {
                 class: {
                     id: students_class?.class.id,
