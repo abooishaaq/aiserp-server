@@ -6,7 +6,6 @@ import fastify, {
 import crypto from "node:crypto";
 import admin from "firebase-admin";
 import cookie from "@fastify/cookie";
-import { v4 as uuidv4 } from "uuid";
 
 import authRoutes from "./router/auth";
 import teacherRoutes from "./router/teacher";
