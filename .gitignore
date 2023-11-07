@@ -2,3 +2,4 @@ node_modules
 db_pass
 bun.*
 activity.json
+firebase.json
