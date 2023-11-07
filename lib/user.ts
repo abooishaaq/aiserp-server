@@ -43,19 +43,16 @@ export const addUserWithPhone = async (
     name: string,
     type: UserType
 ) => {
-    const user = await prisma.user.findFirst({
+    const u = {
+        phone,
+        name,
+        type,
+    };
+    return await prisma.user.upsert({
+        create: { ...u },
+        update: { ...u },
         where: {
             phone,
-        },
-    });
-
-    if (user) return user;
-
-    return await prisma.user.create({
-        data: {
-            name,
-            phone,
-            type,
         },
     });
 };
@@ -72,22 +69,18 @@ export const addUsersWithEmailPhone = async (
 
     return Promise.all(
         emails.map(async (e, i) => {
-            const user = await prisma.user.findFirst({
+            const u = {
+                email: e,
+                phone: phones[i],
+                name: names[i],
+                type,
+            };
+
+            return await prisma.user.upsert({
+                create: { ...u },
+                update: { ...u },
                 where: {
-                    OR: [{ email: e }, { phone: phones[i] }],
-                },
-            });
-
-            if (user) {
-                return user;
-            }
-
-            return await prisma.user.create({
-                data: {
                     email: e,
-                    phone: phones[i],
-                    name: names[i],
-                    type,
                 },
             });
         })
