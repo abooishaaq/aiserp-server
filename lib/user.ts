@@ -22,17 +22,16 @@ export const addUsersWithEmail = (
 
     return Promise.all(
         emails.map(async (e, i) => {
-            const user = await prisma.user.findFirst({
+            const user = {
+                email: e,
+                name: names[i],
+                type,
+            };
+            return await prisma.user.upsert({
+                create: { ...user },
+                update: { ...user },
                 where: {
                     email: e,
-                },
-            });
-            if (user) return user;
-            return await prisma.user.create({
-                data: {
-                    email: e,
-                    name: names[i],
-                    type,
                 },
             });
         })
