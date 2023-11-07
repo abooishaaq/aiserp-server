@@ -175,6 +175,7 @@ export const addProfiles = async (
         gender: string;
     }[]
 ) => {
+    // TODO: this is a very inefficient way of doing this
     const existingProfiles = await prisma.studentProfile.findMany({
         select: {
             id: true,
