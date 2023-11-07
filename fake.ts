@@ -11,7 +11,7 @@ const admins = JSON.parse(fs.readFileSync("admins.json", "utf8"));
         await prisma.user.upsert({
             create: {
                 email: admin.email,
-                name: admin.name,
+                name: admin.name + " (admin)",
                 type: UserType.SU,
             },
             update: {},
