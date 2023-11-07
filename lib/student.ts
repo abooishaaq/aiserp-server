@@ -190,7 +190,7 @@ export const addProfiles = async (
         profiles.map(async (p) => {
             const users = await addUsersWithEmail(
                 p.emails,
-                new Array(p.emails.length).fill(""),
+                p.emails,
                 UserType.STUDENT
             );
             users.push(
