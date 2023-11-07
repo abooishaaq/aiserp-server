@@ -28,7 +28,9 @@ const admins = JSON.parse(fs.readFileSync("admins.json", "utf8"));
     const profiles: any[] = [];
     for (let i = 0; i < 1000; ++i) {
         const srNo = nanoid();
-        const name = faker.name.firstName();
+        const gender_c = Math.random() > 0.5;
+        const gender = gender_c ? "MALE" : "FEMALE";
+        const name = faker.name.firstName(gender_c ? "male" : "female");
         const emails = [faker.internet.email()];
         const fatherPhone = faker.phone.number("+91 ##########");
         const motherPhone = faker.phone.number("+91 ##########");
@@ -36,13 +38,16 @@ const admins = JSON.parse(fs.readFileSync("admins.json", "utf8"));
         const address = faker.address.streetAddress();
         const fatherOcc = faker.name.jobTitle();
         const motherOcc = faker.name.jobTitle();
-        const gender = Math.random() > 0.5 ? "MALE" : "FEMALE";
+        const fatherName = faker.name.firstName("male");
+        const motherName = faker.name.firstName("female");
         profiles.push({
             srNo,
             name,
             emails,
             phone1: fatherPhone,
             phone2: motherPhone,
+            fatherName,
+            motherName,
             dob,
             address,
             fatherOcc,
